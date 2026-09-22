@@ -22,12 +22,14 @@ jobs:
 
       # Testcontainers a besoin du daemon Docker (disponible nativement
       # sur les runners GitHub Actions) pour lancer la vraie base PostgreSQL.
-      - name: Build + tests (Testcontainers) + rapport JaCoCo
+      - name: Build + tests (Testcontainers) + couverture JaCoCo + seuils
         run: mvn -B verify
         env:
           JWT_SECRET: CleSecreteDeTestPourLaCICetteCleEstLongueEtSecrete
 
+      # Même si le check de couverture échoue, on veut quand même le rapport
       - name: Upload du rapport de couverture
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report

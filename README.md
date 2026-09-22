@@ -135,7 +135,8 @@ La **documentation OpenAPI complète** (avec bouton « Authorize » pour le JWT)
 # Tous les tests (unitaires Mockito + intégration Testcontainers avec vraie PostgreSQL)
 mvn test
 
-# Build complet + rapport de couverture JaCoCo (target/site/jacoco)
+# Build complet + rapport JaCoCo (target/site/jacoco) + VÉRIFICATION DES SEUILS :
+# mvn verify échoue si couverture < 35 % (instructions) ou < 20 % (branches)
 mvn verify
 ```
 

@@ -199,6 +199,41 @@
 							<goal>report</goal>
 						</goals>
 					</execution>
+					<!-- Seuil de couverture anti-régression : mvn verify ÉCHOUE si la couverture
+					    descend sous les minimums ci-dessous (mesures de référence le 22/09/2026 :
+					    36,6 % instructions / 23,8 % branches). Monter les seuils au fil des ajouts. -->
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<haltOnFailure>true</haltOnFailure>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.35</minimum>
+										</limit>
+									</limits>
+								</rule>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.20</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
