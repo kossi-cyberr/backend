@@ -144,17 +144,7 @@ Les tests d'intégration (Testcontainers) démarrent automatiquement une base Po
 
 ## 🤖 CI/CD
 
-Pipeline GitHub Actions prévu (`build + tests + couverture` à chaque push/PR sur `main`).
-
-⚠ Le fichier `.github/workflows/ci.yml` est **présent en local mais non tracké** pour
-l'instant : le token utilisé pour initialiser ce dépôt n'avait pas le scope `workflow`.
-Pour l'activer :
-
-```bash
-git add .github
-git commit -m "ci: ajouter le workflow GitHub Actions"
-git push   # nécessite un token avec les scopes repo + workflow
-```
+Pipeline GitHub Actions (`.github/workflows/ci.yml`) : build + tests + couverture à chaque push/PR sur `main`.
 
 ---
 
