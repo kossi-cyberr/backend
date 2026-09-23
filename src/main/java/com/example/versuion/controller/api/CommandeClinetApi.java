@@ -34,7 +34,8 @@ public interface CommandeClinetApi {
                                                                     @RequestParam(defaultValue = "id") String sortBy,
                                                                     @RequestParam(defaultValue = "asc") String sortDir,
                                                                     @RequestParam(required = false) String search,
-                                                                    @RequestParam(required = false) EtatCommande etatCommande);
+                                                                    @RequestParam(required = false) EtatCommande etatCommande,
+                                                                    @RequestParam(required = false) Long vendeurId);
 
     @DeleteMapping(APP_ROOT + "/commandesclients/delete/{idCommandeClient}")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER')")

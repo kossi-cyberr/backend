@@ -173,24 +173,26 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search) {
-        return findAllPaginated(page, size, sortBy, sortDir, search, null);
+        return findAllPaginated(page, size, sortBy, sortDir, search, null, null);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande) {
+        return findAllPaginated(page, size, sortBy, sortDir, search, etatCommande, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande, Long vendeurId) {
         Pageable pageable = PaginationUtils.pageable(page, size, sortBy, sortDir,
                 List.of("id", "code", "dateComande", "etatCommande"));
-        Page<CommandeClient> result;
-        if (etatCommande != null) {
-            result = StringUtils.hasLength(search)
-                    ? commandeClientRepository.findAllTenant(search, etatCommande, pageable)
-                    : commandeClientRepository.findAllTenant(etatCommande, pageable);
-        } else {
-            result = StringUtils.hasLength(search)
-                    ? commandeClientRepository.findAllTenant(search, pageable)
-                    : commandeClientRepository.findAllTenant(pageable);
-        }
+        // Requête multi-critères : chaque paramètre null est ignoré
+        Page<CommandeClient> result = commandeClientRepository.findAllTenant(
+                StringUtils.hasLength(search) ? search : null,
+                etatCommande,
+                vendeurId,
+                pageable);
         return PageResponse.from(result, ComandeClientDto::fromEntity);
     }
 

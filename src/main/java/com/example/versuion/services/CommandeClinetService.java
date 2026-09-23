@@ -22,6 +22,8 @@ public interface CommandeClinetService {
 
     PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande);
 
+    PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande, Long vendeurId);
+
     void delete(Long id);
 
     ComandeClientDto updateEtatCommande(Long idCommande, EtatCommande etatCommande);

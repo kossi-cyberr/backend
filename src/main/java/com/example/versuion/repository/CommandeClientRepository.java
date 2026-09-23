@@ -92,6 +92,25 @@ public interface CommandeClientRepository extends JpaRepository<CommandeClient, 
         return findAllByCodeContainingIgnoreCaseAndEtatCommande(search, etatCommande, pageable);
     }
 
+    /**
+     * Recherche multi-critères à paramètres optionnels : entreprise courante,
+     * code (contient), état, vendeur — tout combinable, null = critère ignoré.
+     */
+    @Query("select c from CommandeClient c where " +
+            "(:idEntreprise is null or c.idEntreprise = :idEntreprise) and " +
+            "(:search is null or cast(:search as string) is null or lower(c.code) like lower(concat('%', cast(:search as string), '%'))) and " +
+            "(:etat is null or c.etatCommande = :etat) and " +
+            "(:vendeurId is null or c.vendeur.id = :vendeurId)")
+    Page<CommandeClient> rechercherMultiCriteres(@Param("idEntreprise") Integer idEntreprise,
+                                                 @Param("search") String search,
+                                                 @Param("etat") EtatCommande etat,
+                                                 @Param("vendeurId") Long vendeurId,
+                                                 Pageable pageable);
+
+    default Page<CommandeClient> findAllTenant(String search, EtatCommande etat, Long vendeurId, Pageable pageable) {
+        return rechercherMultiCriteres(CurrentEntreprise.getId(), search, etat, vendeurId, pageable);
+    }
+
     default Page<CommandeClient> findAllTenant(String search, Pageable pageable) {
         Integer idEntreprise = CurrentEntreprise.getId();
         if (idEntreprise != null) {
