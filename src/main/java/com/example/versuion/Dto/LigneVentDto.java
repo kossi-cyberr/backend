@@ -37,6 +37,23 @@ public class LigneVentDto {
                 .build();
     }
 
+    /**
+     * Variante sans la vente parente : évite la récursion JSON
+     * (vente -> lignes -> vente -> …) dans les réponses API.
+     */
+    public static LigneVentDto fromEntitySansVente(LigneVente ligneVente) {
+        if (ligneVente == null) {
+            return null;
+        }
+        return LigneVentDto.builder()
+                .id(ligneVente.getId())
+                .article(ArticleDto.fromEntity(ligneVente.getArticle()))
+                .quantite(ligneVente.getQuantie())
+                .prixUnitaire(ligneVente.getPrixUnitare())
+                .idEntreprise(ligneVente.getIdEntreprise())
+                .build();
+    }
+
     public static LigneVente toEntity(LigneVentDto ligneVentDto) {
         if (ligneVentDto == null) {
             return null;

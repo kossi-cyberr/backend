@@ -13,9 +13,11 @@ import com.example.versuion.models.Article;
 import com.example.versuion.models.LigneVente;
 import com.example.versuion.models.SourceMvtStk;
 import com.example.versuion.models.TypeMvtStk;
+import com.example.versuion.models.Utilisateurs;
 import com.example.versuion.models.Ventes;
 import com.example.versuion.repository.ArticleRepository;
 import com.example.versuion.repository.LigneVenteRepository;
+import com.example.versuion.repository.UtilisateurRepository;
 import com.example.versuion.repository.VentesRepository;
 import com.example.versuion.services.MvtStkService;
 import com.example.versuion.services.VentesService;
@@ -25,6 +27,8 @@ import com.example.versuion.validator.VentesValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -42,13 +46,16 @@ public class VentesServiceImp implements VentesService {
     private final VentesRepository ventesRepository;
     private final LigneVenteRepository ligneVenteRepository;
     private final MvtStkService mvtStkService;
+    private final UtilisateurRepository utilisateurRepository;
 
     public VentesServiceImp(ArticleRepository articleRepository, VentesRepository ventesRepository,
-                            LigneVenteRepository ligneVenteRepository, MvtStkService mvtStkService) {
+                            LigneVenteRepository ligneVenteRepository, MvtStkService mvtStkService,
+                            UtilisateurRepository utilisateurRepository) {
         this.articleRepository = articleRepository;
         this.ventesRepository = ventesRepository;
         this.ligneVenteRepository = ligneVenteRepository;
         this.mvtStkService = mvtStkService;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @Override
@@ -85,7 +92,14 @@ public class VentesServiceImp implements VentesService {
             dto.getLigneVentes().forEach(lig -> lig.setIdEntreprise(idEntreprise));
         }
 
-        Ventes savedVentes = ventesRepository.save(VentesDto.toEntity(dto));
+        Ventes ventes = VentesDto.toEntity(dto);
+        // Renseigner le vendeur (utilisateur connecté) et la date côté serveur
+        ventes.setVendeur(utilisateurConnecte());
+        if (ventes.getDateVente() == null) {
+            ventes.setDateVente(Instant.now());
+        }
+
+        Ventes savedVentes = ventesRepository.save(ventes);
 
         dto.getLigneVentes().forEach(ligneVenteDto -> {
             LigneVente ligneVente = LigneVentDto.toEntity(ligneVenteDto);
@@ -98,6 +112,7 @@ public class VentesServiceImp implements VentesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public VentesDto findById(Long id) {
         if (id == null) {
             log.error("Ventes ID is NULL");
@@ -109,6 +124,7 @@ public class VentesServiceImp implements VentesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public VentesDto findByCode(String code) {
         if (!StringUtils.hasLength(code)) {
             log.error("Vente CODE is NULL");
@@ -121,6 +137,7 @@ public class VentesServiceImp implements VentesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<VentesDto> findAll() {
         return ventesRepository.findAllTenant().stream()
                 .map(VentesDto::fromEntity)
@@ -128,6 +145,7 @@ public class VentesServiceImp implements VentesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<VentesDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search) {
         Pageable pageable = PaginationUtils.pageable(page, size, sortBy, sortDir,
                 List.of("id", "code", "dateVente", "commentaire"));
@@ -138,6 +156,17 @@ public class VentesServiceImp implements VentesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResponse<VentesDto> findMesVentes(int page, int size) {
+        Utilisateurs vendeur = utilisateurConnecte();
+        Pageable pageable = PaginationUtils.pageable(page, size, "dateVente", "desc",
+                List.of("id", "code", "dateVente"));
+        Page<Ventes> result = ventesRepository.findAllByVendeurTenant(vendeur.getId(), pageable);
+        return PageResponse.from(result, VentesDto::fromEntity);
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         if (id == null) {
             log.error("Vente ID is NULL");
@@ -152,6 +181,22 @@ public class VentesServiceImp implements VentesService {
             throw new InvalidOperationException("Impossible de supprimer cette vente", ErrorCodes.VENTE_ALREADY_IN_USE);
         }
         ventesRepository.deleteById(id);
+    }
+
+    /**
+     * Renvoie l'entité de l'utilisateur connecté (à partir du token JWT),
+     * indépendamment du filtrage multi-entreprise.
+     */
+    private Utilisateurs utilisateurConnecte() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication != null ? authentication.getName() : null;
+        if (!StringUtils.hasLength(email)) {
+            throw new InvalidOperationException("Aucun utilisateur connecté", ErrorCodes.UTILISATEUR_NOT_FOUND);
+        }
+        return utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Aucun utilisateur avec l'email = " + email + " n'a ete trouve dans la BDD",
+                        ErrorCodes.UTILISATEUR_NOT_FOUND));
     }
 
     private void updateMvtStk(LigneVente lig) {

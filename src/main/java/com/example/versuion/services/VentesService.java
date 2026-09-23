@@ -17,5 +17,8 @@ public interface VentesService {
 
     PageResponse<VentesDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search);
 
+    /** Historique paginé des ventes enregistrées par l'utilisateur connecté. */
+    PageResponse<VentesDto> findMesVentes(int page, int size);
+
     void delete(Long id);
 }

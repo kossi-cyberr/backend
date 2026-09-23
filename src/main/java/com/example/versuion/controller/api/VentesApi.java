@@ -32,6 +32,14 @@ public interface VentesApi {
                                              @RequestParam(defaultValue = "asc") String sortDir,
                                              @RequestParam(required = false) String search);
 
+    /**
+     * Historique paginé des ventes de l'utilisateur connecté (tri par date décroissante).
+     * Doit être déclaré avant " /{idVente} " pour éviter toute ambiguïté de mapping.
+     */
+    @GetMapping(VENTES_ENDPOINT + "/mes-ventes")
+    PageResponse<VentesDto> findMesVentes(@RequestParam(defaultValue = "0") int page,
+                                          @RequestParam(defaultValue = "10") int size);
+
     @DeleteMapping(VENTES_ENDPOINT + "/delete/{idVente}")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'MANAGER')")
     void delete(@PathVariable("idVente") Long id);

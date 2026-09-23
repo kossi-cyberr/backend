@@ -45,6 +45,11 @@ public class VentesControlleur implements VentesApi {
     }
 
     @Override
+    public PageResponse<VentesDto> findMesVentes(int page, int size) {
+        return ventesService.findMesVentes(page, size);
+    }
+
+    @Override
     public void delete(Long id) {
         ventesService.delete(id);
     }
