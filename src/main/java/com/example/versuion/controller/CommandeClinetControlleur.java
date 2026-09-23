@@ -48,8 +48,8 @@ public class CommandeClinetControlleur implements CommandeClinetApi {
     }
 
     @Override
-    public ResponseEntity<PageResponse<ComandeClientDto>> findAllPaginated(int page, int size, String sortBy, String sortDir, String search) {
-        return ResponseEntity.ok(commandeClientService.findAllPaginated(page, size, sortBy, sortDir, search));
+    public ResponseEntity<PageResponse<ComandeClientDto>> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande) {
+        return ResponseEntity.ok(commandeClientService.findAllPaginated(page, size, sortBy, sortDir, search, etatCommande));
     }
 
     @Override

@@ -173,11 +173,24 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search) {
+        return findAllPaginated(page, size, sortBy, sortDir, search, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande) {
         Pageable pageable = PaginationUtils.pageable(page, size, sortBy, sortDir,
                 List.of("id", "code", "dateComande", "etatCommande"));
-        Page<CommandeClient> result = StringUtils.hasLength(search)
-                ? commandeClientRepository.findAllTenant(search, pageable)
-                : commandeClientRepository.findAllTenant(pageable);
+        Page<CommandeClient> result;
+        if (etatCommande != null) {
+            result = StringUtils.hasLength(search)
+                    ? commandeClientRepository.findAllTenant(search, etatCommande, pageable)
+                    : commandeClientRepository.findAllTenant(etatCommande, pageable);
+        } else {
+            result = StringUtils.hasLength(search)
+                    ? commandeClientRepository.findAllTenant(search, pageable)
+                    : commandeClientRepository.findAllTenant(pageable);
+        }
         return PageResponse.from(result, ComandeClientDto::fromEntity);
     }
 
