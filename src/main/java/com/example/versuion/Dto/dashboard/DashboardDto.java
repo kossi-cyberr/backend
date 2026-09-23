@@ -43,6 +43,9 @@ public class DashboardDto {
     // --- Graphiques ---
     private List<TopArticleDto> topArticles;
 
+    /** Ventes du jour groupées par vendeur (utile aux rôles ADMIN/MANAGER). */
+    private List<VentesDuJourParVendeurDto> ventesDuJourParVendeur;
+
     private List<VentesParMoisDto> ventesParMois;
 
     private List<VentesParCategorieDto> ventesParCategorie;

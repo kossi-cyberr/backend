@@ -17,6 +17,8 @@ import com.example.versuion.models.EtatCommande;
 import com.example.versuion.models.LigneComandeClient;
 import com.example.versuion.models.SourceMvtStk;
 import com.example.versuion.models.TypeMvtStk;
+import com.example.versuion.models.Utilisateurs;
+import com.example.versuion.repository.UtilisateurRepository;
 import com.example.versuion.repository.ArticleRepository;
 import com.example.versuion.repository.ClientRepository;
 import com.example.versuion.repository.CommandeClientRepository;
@@ -30,6 +32,8 @@ import com.example.versuion.validator.CommandeClientValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -49,17 +53,20 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     private final ArticleRepository articleRepository;
     private final LigneCommandeClientRepository ligneCommandeClientRepository;
     private final MvtStkService mvtStkService;
+    private final UtilisateurRepository utilisateurRepository;
 
     public CommandeClinetServiceImpl(CommandeClientRepository commandeClientRepository,
                                      ClientRepository clientRepository,
                                      ArticleRepository articleRepository,
                                      LigneCommandeClientRepository ligneCommandeClientRepository,
-                                     MvtStkService mvtStkService) {
+                                     MvtStkService mvtStkService,
+                                     UtilisateurRepository utilisateurRepository) {
         this.commandeClientRepository = commandeClientRepository;
         this.clientRepository = clientRepository;
         this.articleRepository = articleRepository;
         this.ligneCommandeClientRepository = ligneCommandeClientRepository;
         this.mvtStkService = mvtStkService;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     @Override
@@ -112,7 +119,11 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
             }
         }
 
-        CommandeClient savedCmdClt = commandeClientRepository.save(ComandeClientDto.toEntity(dto));
+        CommandeClient commande = ComandeClientDto.toEntity(dto);
+        // Le vendeur est renseigné côté serveur : utilisateur authentifié ayant créé la commande
+        commande.setVendeur(utilisateurConnecte());
+
+        CommandeClient savedCmdClt = commandeClientRepository.save(commande);
         if (dto.getLigneComandeClientList() != null) {
             dto.getLigneComandeClientList().forEach(ligCmdClt -> {
                 LigneComandeClient ligneCommandeClient = LigneCommandeClientDto.toEntity(ligCmdClt);
@@ -124,6 +135,7 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ComandeClientDto findById(Long id) {
         if (id == null) {
             log.error("Commande client ID is NULL");
@@ -137,6 +149,7 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ComandeClientDto findByCode(String code) {
         if (!StringUtils.hasLength(code)) {
             log.error("Commande client CODE is NULL");
@@ -150,6 +163,7 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ComandeClientDto> findAll() {
         return commandeClientRepository.findAllTenant().stream()
                 .map(ComandeClientDto::fromEntity)
@@ -157,12 +171,26 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search) {
+        return findAllPaginated(page, size, sortBy, sortDir, search, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande) {
         Pageable pageable = PaginationUtils.pageable(page, size, sortBy, sortDir,
                 List.of("id", "code", "dateComande", "etatCommande"));
-        Page<CommandeClient> result = StringUtils.hasLength(search)
-                ? commandeClientRepository.findAllTenant(search, pageable)
-                : commandeClientRepository.findAllTenant(pageable);
+        Page<CommandeClient> result;
+        if (etatCommande != null) {
+            result = StringUtils.hasLength(search)
+                    ? commandeClientRepository.findAllTenant(search, etatCommande, pageable)
+                    : commandeClientRepository.findAllTenant(etatCommande, pageable);
+        } else {
+            result = StringUtils.hasLength(search)
+                    ? commandeClientRepository.findAllTenant(search, pageable)
+                    : commandeClientRepository.findAllTenant(pageable);
+        }
         return PageResponse.from(result, ComandeClientDto::fromEntity);
     }
 
@@ -195,9 +223,17 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
         }
 
         ComandeClientDto comandeClientDto = checkEtatCommande(idCommande);
-        comandeClientDto.setEtatCommande(etatCommande);
 
-        CommandeClient commandeClientSaved = commandeClientRepository.save(ComandeClientDto.toEntity(comandeClientDto));
+        // Chargement direct de l'entité pour préserver les champs non exposés par le DTO
+        // (vendeur, ...) que toEntity() ne recopie pas.
+        CommandeClient commande = commandeClientRepository.findByIdTenant(idCommande)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Aucune commande client n'a ete trouve avec l'ID " + idCommande, ErrorCodes.COMMANDE_CLIENT_NOT_FOUND));
+        commande.setEtatCommande(etatCommande);
+        // Horodate la livraison au passage à l'état LIVREE
+        commande.setDateLivraison(EtatCommande.LIVREE.equals(etatCommande) ? Instant.now() : null);
+
+        CommandeClient commandeClientSaved = commandeClientRepository.save(commande);
         if (comandeClientDto.isCommandeLivree()) {
             updateMvtStk(idCommande);
         }
@@ -292,6 +328,22 @@ public class CommandeClinetServiceImpl implements CommandeClinetService {
         return ligneCommandeClientRepository.findAllByCommandeClientIdTenant(idCommande).stream()
                 .map(LigneCommandeClientDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Renvoie l'utilisateur authentifié (rattaché comme vendeur de la commande),
+     * indépendamment du filtrage multi-entreprise.
+     */
+    private Utilisateurs utilisateurConnecte() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication != null ? authentication.getName() : null;
+        if (!StringUtils.hasLength(email)) {
+            throw new InvalidOperationException("Aucun utilisateur connecté", ErrorCodes.UTILISATEUR_NOT_FOUND);
+        }
+        return utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Aucun utilisateur avec l'email = " + email + " n'a ete trouve dans la BDD",
+                        ErrorCodes.UTILISATEUR_NOT_FOUND));
     }
 
     private void checkIdCommande(Long idCommande) {

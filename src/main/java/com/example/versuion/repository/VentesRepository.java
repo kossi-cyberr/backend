@@ -24,6 +24,8 @@ public interface VentesRepository extends JpaRepository<Ventes, Long> {
 
     Page<Ventes> findAllByIdEntrepriseAndCodeContainingIgnoreCase(Integer idEntreprise, String search, Pageable pageable);
 
+    Page<Ventes> findAllByIdEntrepriseAndVendeurId(Integer idEntreprise, Long vendeurId, Pageable pageable);
+
     long countByIdEntreprise(Integer idEntreprise);
 
     default Optional<Ventes> findByIdTenant(Long id) {
@@ -53,6 +55,19 @@ public interface VentesRepository extends JpaRepository<Ventes, Long> {
         }
         return findAllByCodeContainingIgnoreCase(search, pageable);
     }
+
+    /**
+     * Ventes de l'entreprise courante enregistrées par le vendeur donné.
+     * Sans entreprise courante (hors contexte JWT), retombe sur un filtrage par vendeur seul.
+     */
+    default Page<Ventes> findAllByVendeurTenant(Long vendeurId, Pageable pageable) {
+        Integer idEntreprise = CurrentEntreprise.getId();
+        return idEntreprise != null
+                ? findAllByIdEntrepriseAndVendeurId(idEntreprise, vendeurId, pageable)
+                : findAllByVendeurId(vendeurId, pageable);
+    }
+
+    Page<Ventes> findAllByVendeurId(Long vendeurId, Pageable pageable);
 
     Page<Ventes> findAllByCodeContainingIgnoreCase(String search, Pageable pageable);
 }

@@ -5,6 +5,7 @@ import com.example.versuion.Dto.ComandeFournisseurDto;
 import com.example.versuion.Dto.FournisseurDto;
 import com.example.versuion.Dto.LigneCommandeFournisseurDto;
 import com.example.versuion.Dto.MvtStkDto;
+import com.example.versuion.Dto.PageResponse;
 import com.example.versuion.exception.EntityNotFoundException;
 import com.example.versuion.exception.ErrorCodes;
 import com.example.versuion.exception.InvalidEntityException;
@@ -23,9 +24,12 @@ import com.example.versuion.repository.LigneCommandeFournisseurRepository;
 import com.example.versuion.services.CommandeFournisseurService;
 import com.example.versuion.services.MvtStkService;
 import com.example.versuion.utiles.CurrentEntreprise;
+import com.example.versuion.utiles.PaginationUtils;
 import com.example.versuion.validator.ArticleValidator;
 import com.example.versuion.validator.CommandeFournisseurValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -146,6 +150,16 @@ public class CommandeFournisseurServiceImpl implements CommandeFournisseurServic
         return commandeFournisseurRepository.findAllTenant().stream()
                 .map(ComandeFournisseurDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PageResponse<ComandeFournisseurDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = PaginationUtils.pageable(page, size, sortBy, sortDir,
+                List.of("id", "code", "dateComande", "etatCommande"));
+        Page<ComandeFournisseur> result = StringUtils.hasLength(search)
+                ? commandeFournisseurRepository.findAllTenant(search, pageable)
+                : commandeFournisseurRepository.findAllTenant(pageable);
+        return PageResponse.from(result, ComandeFournisseurDto::fromEntity);
     }
 
     @Override

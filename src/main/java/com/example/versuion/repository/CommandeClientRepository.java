@@ -2,6 +2,7 @@ package com.example.versuion.repository;
 
 import com.example.versuion.Dto.dashboard.CommandesParClientDto;
 import com.example.versuion.models.CommandeClient;
+import com.example.versuion.models.EtatCommande;
 import com.example.versuion.utiles.CurrentEntreprise;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,15 @@ public interface CommandeClientRepository extends JpaRepository<CommandeClient, 
 
     Page<CommandeClient> findAllByIdEntrepriseAndCodeContainingIgnoreCase(Integer idEntreprise, String search, Pageable pageable);
 
+    // --- Filtre par état (liste des commandes) ---
+    Page<CommandeClient> findAllByIdEntrepriseAndEtatCommande(Integer idEntreprise, EtatCommande etatCommande, Pageable pageable);
+
+    Page<CommandeClient> findAllByIdEntrepriseAndCodeContainingIgnoreCaseAndEtatCommande(Integer idEntreprise, String search, EtatCommande etatCommande, Pageable pageable);
+
+    Page<CommandeClient> findAllByEtatCommande(EtatCommande etatCommande, Pageable pageable);
+
+    Page<CommandeClient> findAllByCodeContainingIgnoreCaseAndEtatCommande(String search, EtatCommande etatCommande, Pageable pageable);
+
     long countByIdEntreprise(Integer idEntreprise);
 
     default Optional<CommandeClient> findByIdTenant(Long id) {
@@ -64,6 +74,22 @@ public interface CommandeClientRepository extends JpaRepository<CommandeClient, 
     default Page<CommandeClient> findAllTenant(Pageable pageable) {
         Integer idEntreprise = CurrentEntreprise.getId();
         return idEntreprise != null ? findAllByIdEntreprise(idEntreprise, pageable) : findAll(pageable);
+    }
+
+    default Page<CommandeClient> findAllTenant(EtatCommande etatCommande, Pageable pageable) {
+        Integer idEntreprise = CurrentEntreprise.getId();
+        if (idEntreprise != null) {
+            return findAllByIdEntrepriseAndEtatCommande(idEntreprise, etatCommande, pageable);
+        }
+        return findAllByEtatCommande(etatCommande, pageable);
+    }
+
+    default Page<CommandeClient> findAllTenant(String search, EtatCommande etatCommande, Pageable pageable) {
+        Integer idEntreprise = CurrentEntreprise.getId();
+        if (idEntreprise != null) {
+            return findAllByIdEntrepriseAndCodeContainingIgnoreCaseAndEtatCommande(idEntreprise, search, etatCommande, pageable);
+        }
+        return findAllByCodeContainingIgnoreCaseAndEtatCommande(search, etatCommande, pageable);
     }
 
     default Page<CommandeClient> findAllTenant(String search, Pageable pageable) {

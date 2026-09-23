@@ -27,6 +27,11 @@ public class ArticleControler implements ArticleApi {
     }
 
     @Override
+    public ArticleDto update(Long idArticle, ArticleDto articleDto) {
+        return articleService.update(idArticle, articleDto);
+    }
+
+    @Override
     public ArticleDto findById(Long articleId) {
         return articleService.findById(articleId);
     }

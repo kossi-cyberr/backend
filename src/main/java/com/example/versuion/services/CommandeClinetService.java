@@ -20,6 +20,8 @@ public interface CommandeClinetService {
 
     PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search);
 
+    PageResponse<ComandeClientDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search, EtatCommande etatCommande);
+
     void delete(Long id);
 
     ComandeClientDto updateEtatCommande(Long idCommande, EtatCommande etatCommande);
