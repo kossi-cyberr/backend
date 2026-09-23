@@ -1,6 +1,7 @@
 package com.example.versuion.repository;
 
 import com.example.versuion.Dto.dashboard.TopArticleDto;
+import com.example.versuion.Dto.dashboard.VentesDuJourParVendeurDto;
 import com.example.versuion.Dto.dashboard.VentesParCategorieDto;
 import com.example.versuion.Dto.dashboard.VentesParMoisDto;
 import com.example.versuion.models.LigneVente;
@@ -56,6 +57,20 @@ public interface LigneVenteRepository extends JpaRepository<LigneVente, Long> {
             "group by a.id, a.designation, a.codeArticle " +
             "order by coalesce(sum(l.quantie), 0) desc")
     List<TopArticleDto> topArticles(@Param("idEntreprise") Integer idEntreprise, Pageable pageable);
+
+    /** Ventes du jour groupées par vendeur (pour le dashboard ADMIN/MANAGER). */
+    @Query("select new com.example.versuion.Dto.dashboard.VentesDuJourParVendeurDto(" +
+            "v.vendeur.id, concat(v.vendeur.nom, ' ', v.vendeur.prenom), " +
+            "count(distinct l.vente.id), coalesce(sum(l.prixUnitare * l.quantie), 0), coalesce(sum(l.quantie), 0)) " +
+            "from LigneVente l join l.vente v " +
+            "where l.idEntreprise = :idEntreprise " +
+            "and year(v.dateVente) = :annee and month(v.dateVente) = :mois and day(v.dateVente) = :jour " +
+            "group by v.vendeur.id, v.vendeur.nom, v.vendeur.prenom " +
+            "order by coalesce(sum(l.prixUnitare * l.quantie), 0) desc")
+    List<VentesDuJourParVendeurDto> ventesDuJourParVendeur(@Param("idEntreprise") Integer idEntreprise,
+                                                           @Param("annee") int annee,
+                                                           @Param("mois") int mois,
+                                                           @Param("jour") int jour);
 
     // --- Méthodes multi-entreprise (filtrage par idEntreprise) ---
     List<LigneVente> findAllByArticleIdAndIdEntreprise(Long articleId, Integer idEntreprise);

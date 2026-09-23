@@ -75,6 +75,8 @@ public class DashboardServiceImpl implements DashboardService {
                 .valeurStock(articleRepository.valeurStock(idEntreprise))
                 .margeMoyenne(articleRepository.margeMoyenne(idEntreprise))
                 .topArticles(ligneVenteRepository.topArticles(idEntreprise, PageRequest.of(0, 10)))
+                .ventesDuJourParVendeur(ligneVenteRepository.ventesDuJourParVendeur(idEntreprise,
+                        aujourdhui.getYear(), aujourdhui.getMonthValue(), aujourdhui.getDayOfMonth()))
                 .ventesParMois(ligneVenteRepository.ventesParMois(idEntreprise))
                 .ventesParCategorie(ligneVenteRepository.ventesParCategorie(idEntreprise))
                 .commandesParClient(commandeClientRepository.commandesParClient(idEntreprise))
