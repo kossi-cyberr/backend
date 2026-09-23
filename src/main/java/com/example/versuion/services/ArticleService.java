@@ -12,6 +12,8 @@ public interface ArticleService {
 
     ArticleDto save(ArticleDto articleDto);
 
+    ArticleDto update(Long idArticle, ArticleDto articleDto);
+
     ArticleDto findById(Long articleId);
 
     ArticleDto findByCodeArticle(String codeArticle);

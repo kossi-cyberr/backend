@@ -29,6 +29,15 @@ public interface ArticleApi {
     ArticleDto save(@RequestBody ArticleDto articleDto);
     //RequestBody : faire la transformation de l'objet de format json vers "ArticleDto"
 
+    @PutMapping(value = APP_ROOT + "/articles/update/{idArticle}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Modifier un article", description = "Cette methode permet de modifier un article existant par son ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "L'objet article modifie"),
+            @ApiResponse(responseCode = "400", description = "L'objet article n'est pas valide"),
+            @ApiResponse(responseCode = "404", description = "Aucun article n'existe dans la BDD avec l'ID fourni")
+    })
+    ArticleDto update(@PathVariable("idArticle") Long idArticle, @RequestBody ArticleDto articleDto);
+
     @GetMapping(value = APP_ROOT + "/articles/find/{idArticle}", produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Rechercher un article par ID", description = "Cette methode permet de chercher un article par son ID")
     @ApiResponses(value = {

@@ -80,6 +80,30 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
+    public ArticleDto update(Long idArticle, ArticleDto articleDto) {
+        List<String> errors = ArticleValidator.validate(articleDto);
+        if (!errors.isEmpty()) {
+            log.error("Article is not valid {}", articleDto);
+            throw new InvalidEntityException("l'article n'est pas valide", ErrorCodes.ARTICLE_NOT_VALID, errors);
+        }
+        // Verifier que l'article existe et appartient a l'entreprise courante
+        ArticleDto existant = findById(idArticle);
+        Long idCategory = articleDto.getCategory().getId();
+        Category category = categoryRepository.findByIdTenant(idCategory)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Aucune category avec l'ID " + idCategory + " n'a ete trouve dans la base",
+                        ErrorCodes.CATEGORY_NOT_FOUND));
+
+        Article article = ArticleDto.toEntity(articleDto);
+        article.setId(existant.getId());
+        article.setCategory(category);
+        // Conserver le rattachement entreprise existant
+        article.setIdEntreprise(existant.getIdEntreprise());
+        articleRepository.save(article);
+        return ArticleDto.fromEntity(article);
+    }
+
+    @Override
     public ArticleDto findById(Long articleId) {
         if (articleId == null) {
             log.error("Article id is null");

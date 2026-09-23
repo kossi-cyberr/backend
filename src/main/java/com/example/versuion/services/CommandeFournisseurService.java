@@ -2,6 +2,7 @@ package com.example.versuion.services;
 
 import com.example.versuion.Dto.ComandeFournisseurDto;
 import com.example.versuion.Dto.LigneCommandeFournisseurDto;
+import com.example.versuion.Dto.PageResponse;
 import com.example.versuion.models.EtatCommande;
 
 import java.math.BigDecimal;
@@ -16,6 +17,8 @@ public interface CommandeFournisseurService {
     ComandeFournisseurDto findByCode(String code);
 
     List<ComandeFournisseurDto> findAll();
+
+    PageResponse<ComandeFournisseurDto> findAllPaginated(int page, int size, String sortBy, String sortDir, String search);
 
     void delete(Long id);
 

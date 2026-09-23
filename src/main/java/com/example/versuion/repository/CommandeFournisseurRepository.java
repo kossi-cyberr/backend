@@ -2,6 +2,8 @@ package com.example.versuion.repository;
 
 import com.example.versuion.models.ComandeFournisseur;
 import com.example.versuion.utiles.CurrentEntreprise;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -47,4 +49,23 @@ public interface CommandeFournisseurRepository extends JpaRepository<ComandeFour
         Integer idEntreprise = CurrentEntreprise.getId();
         return idEntreprise != null ? findAllByFournisseurIdAndIdEntreprise(id, idEntreprise) : findAllByFournisseurId(id);
     }
+
+    default Page<ComandeFournisseur> findAllTenant(Pageable pageable) {
+        Integer idEntreprise = CurrentEntreprise.getId();
+        return idEntreprise != null ? findAllByIdEntreprise(idEntreprise, pageable) : findAll(pageable);
+    }
+
+    default Page<ComandeFournisseur> findAllTenant(String search, Pageable pageable) {
+        Integer idEntreprise = CurrentEntreprise.getId();
+        if (idEntreprise != null) {
+            return findAllByIdEntrepriseAndCodeContainingIgnoreCase(idEntreprise, search, pageable);
+        }
+        return findAllByCodeContainingIgnoreCase(search, pageable);
+    }
+
+    Page<ComandeFournisseur> findAllByIdEntreprise(Integer idEntreprise, Pageable pageable);
+
+    Page<ComandeFournisseur> findAllByIdEntrepriseAndCodeContainingIgnoreCase(Integer idEntreprise, String search, Pageable pageable);
+
+    Page<ComandeFournisseur> findAllByCodeContainingIgnoreCase(String search, Pageable pageable);
 }
