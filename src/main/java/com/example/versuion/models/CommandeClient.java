@@ -28,6 +28,14 @@ public class CommandeClient extends AbstractEntity{
     @JoinColumn(name = "idClient")
     private Client client;
 
+    /** Utilisateur (vendeur) ayant créé la commande, renseigné côté serveur. */
+    @ManyToOne
+    @JoinColumn(name = "vendeur_id")
+    private Utilisateurs vendeur;
+
+    /** Date à laquelle la commande a été livrée (renseignée au passage à LIVREE). */
+    private Instant dateLivraison;
+
     @OneToMany(mappedBy = "commandeClient")
     private List<LigneComandeClient> ligneComandeClientList;
 }
